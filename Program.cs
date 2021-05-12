@@ -8,23 +8,40 @@ namespace gentzen_calc
     {
         static void Main(string[] args)
         {
-            var atomicVarA = new Atomic("A");
-            var atomicVarB = new Atomic("B");
-            //var negated = new Negate(atomicVarA);
-            //var and = new And(atomicVarA, atomicVarB);
+            //  |= (!b V c ) => ((a ^ b ) => c)
+            var trueRightSide = 
+                new Implication(
+                    new Or(
+                        new Negate(
+                            new Atomic("b")),
+                        new Atomic("c")),
+                    new Implication(
+                        new And(
+                            new Atomic("a"),
+                            new Atomic("b")),
+                        new Atomic("c")));
 
-            //// formula (Q and neg(P))
-            //Formula form = new And(new Atomic("Q"), new Negate(new Atomic("P")));
-            //Formula or = new Or(new Atomic("a"), new Atomic("b"));
+            var firstProofSituation = new ProofSituation(trueRightSide);
+            ReductionTree firstTree = new ReductionTree(firstProofSituation);
+            bool firstTruth = firstTree.IsAxiome();
+            Console.WriteLine(firstTree.ToString());
+            Console.WriteLine(firstTruth);
 
-            //// formula ((Q and neg(P)) or W)
-            Formula form2 = new Or(new And(new Atomic("Q"), new Negate(new Atomic("P"))), new Atomic("W"));
-            //Console.WriteLine(form2);
-            //Console.WriteLine(or);
-            //Console.WriteLine(negated);
-            //Console.WriteLine(and);
-            //Console.WriteLine(form);
-
+            // |= (a ^ b) => (!a V !b)
+            var falseRightSide =
+                new Implication(
+                    new And(
+                        new Atomic("a"),
+                        new Atomic("b")),
+                    new Or(
+                        new Negate(
+                            new Atomic("a")),
+                        new Negate(
+                            new Atomic("b"))));
+            ReductionTree secondTree = new ReductionTree(new ProofSituation(falseRightSide));
+            bool secondTruth = secondTree.IsAxiome();
+            Console.WriteLine(secondTruth);
+        }
 
             Formula impl = new Implication(atomicVarA, atomicVarB);
             Console.WriteLine(impl);
