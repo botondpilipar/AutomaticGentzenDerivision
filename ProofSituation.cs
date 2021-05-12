@@ -18,6 +18,7 @@ namespace gentzen_calc
         private HashSet<Formula> goals;
 
 
+        #region Constructors
         public ProofSituation(Formula goal) : this()
         {
             this.goals.Add(goal);
@@ -28,6 +29,9 @@ namespace gentzen_calc
             this.knowledgeBase = new HashSet<Formula>();
             this.goals = new HashSet<Formula>();
         }
+        #endregion
+
+        #region Predicates
         public bool IsAxiome()
         {
             foreach(Formula f in knowledgeBase)
@@ -42,52 +46,35 @@ namespace gentzen_calc
             }
             return false;
         }
+        #endregion
 
+        #region Kill Methods
         // Implikáció eltüntetése a célból:
         // üres |- A=>B  =  A |- B
 
-        public ProofSituation KillImplicationInGoals()
+        public List<ProofSituation> KillImplicationInGoals()
         {
-            if(!preKillImplicationInGoals())
+            if(!FormExistsInGoals<Implication>())
             {
                 return null;
             }
 
             var implications = goals.Where(f => f is Implication);
             Implication i = implications.First() as Implication;
-            return resolveImplication(i);
-        }
-        public bool preKillImplicationInGoals()
-        {
-            return goals.Where(f => f is Implication)
-                        .Count() > 0;
-        }
-        private ProofSituation resolveImplication(Implication i)
-        {
             ProofSituation proof = new ProofSituation();
             proof.goals = new HashSet<Formula>(this.goals);
             proof.knowledgeBase = new HashSet<Formula>(this.knowledgeBase);
             proof.goals.Remove(i);
             proof.knowledgeBase.Add(i.GetLeft());
             proof.goals.Add(i.GetRight());
-
-            return proof;
+            var list = new List<ProofSituation>();
+            list.Add(proof);
+            return list;
         }
 
-        public override string ToString()
+        public List<ProofSituation> KillOrInGoals()
         {
-            return String.Join(", ", this.knowledgeBase)
-                    + " |- "
-                    + String.Join(", ", this.goals);
-        }
-
-        // Vagy eltüntetése a célból:
-        // Üres |- A vagy B = Üres |- A, B
-        // Általánosan: tudásbázis |- Célok, A v B = tudázbázis |- célok, A, B
-
-        public ProofSituation KillOrInGoals()
-        {
-            if(!preKillOrInGoals())
+            if (!(FormExistsInGoals<Or>()))
             {
                 return null;
             }
@@ -95,7 +82,7 @@ namespace gentzen_calc
             Formula firstOr = null;
             foreach (Formula f in goals)
             {
-                if(f is Or)
+                if (f is Or)
                 {
                     firstOr = f;
                     break;
@@ -107,29 +94,14 @@ namespace gentzen_calc
             next.goals.Remove(firstOr);
             next.goals.Add(firstOr.GetLeft());
             next.goals.Add(firstOr.GetRight());
-            return next;
+            var list = new List<ProofSituation>();
+            list.Add(next);
+            return list;
         }
 
-        public bool preKillOrInGoals()
+        public List<ProofSituation> KillAndFromKnowledgeBase()
         {
-            foreach(Formula f in goals)
-            {
-                if (f is Or)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-
-        // És eltüntetése a tudásbázisból:
-        // Példa: A és B |- üres = A, B |- üres
-        // Általánosan: tudásbázis, A és B   |- célok 
-        //           =  tudásbázis, A,   B   |- célok
-        public ProofSituation KillAndFromKnowledgeBase()
-        {
-            if (!preKillAndFromKnowledgeBase())
+            if (!FormExistsInKnowledgeBase<And>())
             {
                 return null;
             }
@@ -149,19 +121,30 @@ namespace gentzen_calc
             next.knowledgeBase.Remove(firstAnd);
             next.knowledgeBase.Add(firstAnd.GetLeft());
             next.knowledgeBase.Add(firstAnd.GetRight());
-            return next;
+            var list = new List<ProofSituation>();
+            list.Add(next);
+            return list;
+        }
+        #endregion
+        
+        #region Form checks
+        public bool FormExistsInKnowledgeBase<T>()
+        {
+            return this.knowledgeBase.Where(f => f is T).Count() > 0;
         }
 
-        private bool preKillAndFromKnowledgeBase()
+        public bool FormExistsInGoals<T>()
         {
-            foreach (Formula f in knowledgeBase)
-            {
-                if (f is And)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return this.goals.Where(f => f is T).Count() > 0;
+        }
+
+        #endregion
+
+        public override string ToString()
+        {
+            return String.Join(", ", this.knowledgeBase)
+                    + " |- "
+                    + String.Join(", ", this.goals);
         }
     }
 }

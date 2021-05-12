@@ -1,5 +1,6 @@
 ﻿using System;
 using gentzen_calc.Form;
+using System.Collections.Generic;
 
 namespace gentzen_calc
 {
@@ -31,8 +32,8 @@ namespace gentzen_calc
 
             ProofSituation ps1 = new ProofSituation(impl);
             Console.WriteLine(ps1);
-            ProofSituation ps2 = ps1.KillImplicationInGoals();
-            Console.WriteLine(ps2);
+            List<ProofSituation> ps2 = ps1.KillImplicationInGoals();
+            Console.WriteLine(ps2[0]);
 
         }
     }
