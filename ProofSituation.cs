@@ -14,9 +14,11 @@ namespace gentzen_calc
         // A bizonyítási szituáció axióma, ha egy formula előfordul a tudásbázisban
         // és a célok között is, például
         // a-ból a levezethető (A |- A)
+
+        #region Members
         private HashSet<Formula> knowledgeBase;
         private HashSet<Formula> goals;
-
+        #endregion
 
         #region Constructors
         public ProofSituation(Formula goal) : this()
@@ -33,22 +35,23 @@ namespace gentzen_calc
 
         #region Predicates
         public bool IsAxiome()
-        {
-            foreach(Formula f in knowledgeBase)
+        { 
+            if(!IsAtomicSituation())
             {
-                // A contains meghívja az equals metódust
-                // Ahhoz hogy a contains jól működjön, az egyes formulákban meg
-                // kell írni az equals metódust
-                if(goals.Contains(f))
-                {
-                    return true;
-                }
+                return false;
             }
-            return false;
+
+            return knowledgeBase.Any(f => goals.Contains(f));
+        }
+
+        public bool IsAtomicSituation()
+        {
+            return this.knowledgeBase.All(f => f is Atomic) &&
+                this.goals.All(f => f is Atomic);
         }
         #endregion
 
-        #region Kill Methods
+        #region Kill in Goals
         // Implikáció eltüntetése a célból:
         // üres |- A=>B  =  A |- B
 
@@ -61,9 +64,7 @@ namespace gentzen_calc
 
             var implications = goals.Where(f => f is Implication);
             Implication i = implications.First() as Implication;
-            ProofSituation proof = new ProofSituation();
-            proof.goals = new HashSet<Formula>(this.goals);
-            proof.knowledgeBase = new HashSet<Formula>(this.knowledgeBase);
+            ProofSituation proof = GetNext();
             proof.goals.Remove(i);
             proof.knowledgeBase.Add(i.GetLeft());
             proof.goals.Add(i.GetRight());
@@ -88,9 +89,7 @@ namespace gentzen_calc
                     break;
                 }
             }
-            ProofSituation next = new ProofSituation();
-            next.knowledgeBase = new HashSet<Formula>(this.knowledgeBase);
-            next.goals = new HashSet<Formula>(this.goals);
+            ProofSituation next = GetNext();
             next.goals.Remove(firstOr);
             next.goals.Add(firstOr.GetLeft());
             next.goals.Add(firstOr.GetRight());
@@ -99,6 +98,46 @@ namespace gentzen_calc
             return list;
         }
 
+        public List<ProofSituation> KillNegationInGoals()
+        {
+            if (!FormExistsInGoals<Negate>())
+            {
+                return null;
+            }
+
+            Negate negation = (Negate)this.goals.Where(f => f is Negate).First();
+            var next = GetNext();
+            next.goals.Remove(negation);
+            next.knowledgeBase.Add(negation.GetRight());
+            var list = new List<ProofSituation>();
+            list.Add(next);
+            return list;
+        }
+
+        public List<ProofSituation> KillAndInGoals()
+        {
+            if (!FormExistsInGoals<And>())
+            {
+                return null;
+            }
+
+            And and = (And)this.goals.Where(f => f is And).First();
+
+            var nextFirst = GetNext();
+            nextFirst.goals.Remove(and);
+            nextFirst.goals.Add(and.GetLeft());
+
+            var nextSecond = GetNext();
+            nextSecond.goals.Remove(and);
+            nextSecond.goals.Add(and.GetRight());
+            var list = new List<ProofSituation>();
+            list.Add(nextFirst);
+            list.Add(nextSecond);
+            return list;
+        }
+        #endregion
+
+        #region Kill in Knowledgebase
         public List<ProofSituation> KillAndFromKnowledgeBase()
         {
             if (!FormExistsInKnowledgeBase<And>())
@@ -115,9 +154,7 @@ namespace gentzen_calc
                     break;
                 }
             }
-            ProofSituation next = new ProofSituation();
-            next.knowledgeBase = new HashSet<Formula>(this.knowledgeBase);
-            next.goals = new HashSet<Formula>(this.goals);
+            ProofSituation next = GetNext();
             next.knowledgeBase.Remove(firstAnd);
             next.knowledgeBase.Add(firstAnd.GetLeft());
             next.knowledgeBase.Add(firstAnd.GetRight());
@@ -125,8 +162,72 @@ namespace gentzen_calc
             list.Add(next);
             return list;
         }
+
+        public List<ProofSituation> KillOrFromKnowledgeBase()
+        {
+            if (!FormExistsInKnowledgeBase<Or>())
+            {
+                return null;
+            }
+
+            Or firstOr = (Or)this.knowledgeBase.Where(f => f is Or).First();
+
+            ProofSituation nextFirst = GetNext();
+            ProofSituation nextSecond = GetNext();
+
+            nextFirst.knowledgeBase.Remove(firstOr);
+            nextFirst.knowledgeBase.Add(firstOr.GetLeft());
+            nextSecond.knowledgeBase.Remove(firstOr);
+            nextSecond.knowledgeBase.Add(firstOr.GetRight());
+            
+            var list = new List<ProofSituation>();
+            list.Add(nextFirst);
+            list.Add(nextSecond);
+            return list;
+        }
+
+        public List<ProofSituation> KillImplicationFromKnowledgeBase()
+        {
+            if (!FormExistsInKnowledgeBase<Implication>())
+            {
+                return null;
+            }
+
+            Implication firstImplication = (Implication)this.knowledgeBase.Where(f => f is Implication).First();
+
+            ProofSituation nextFirst = GetNext();
+            ProofSituation nextSecond = GetNext();
+
+            nextFirst.knowledgeBase.Remove(firstImplication);
+            nextFirst.goals.Add(firstImplication.GetLeft());
+            nextSecond.knowledgeBase.Remove(firstImplication);
+            nextSecond.goals.Add(firstImplication.GetRight());
+
+            var list = new List<ProofSituation>();
+            list.Add(nextFirst);
+            list.Add(nextSecond);
+            return list;
+        }
+
+        public List<ProofSituation> KillNegationFromKnowledgeBase()
+        {
+            if (!FormExistsInKnowledgeBase<Negate>())
+            {
+                return null;
+            }
+
+            Negate firstNegation = (Negate)this.knowledgeBase.Where(f => f is Negate).First();
+
+            ProofSituation next = GetNext();
+            next.knowledgeBase.Remove(firstNegation);
+            next.goals.Add(firstNegation.GetRight());
+
+            var list = new List<ProofSituation>();
+            list.Add(next);
+            return list;
+        }
         #endregion
-        
+
         #region Form checks
         public bool FormExistsInKnowledgeBase<T>()
         {
@@ -140,11 +241,23 @@ namespace gentzen_calc
 
         #endregion
 
+        #region Overrides
         public override string ToString()
         {
             return String.Join(", ", this.knowledgeBase)
                     + " |- "
                     + String.Join(", ", this.goals);
         }
+        #endregion
+
+        #region Private methods
+        private ProofSituation GetNext()
+        {
+            var newProofSituation = new ProofSituation();
+            newProofSituation.goals = new HashSet<Formula>(this.goals);
+            newProofSituation.knowledgeBase = new HashSet<Formula>(this.knowledgeBase);
+            return newProofSituation;
+        }
+        #endregion
     }
 }
