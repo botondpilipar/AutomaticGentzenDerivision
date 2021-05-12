@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gentzen_calc", "gentzen_calc.csproj", "{9EB0450F-FEAD-45EC-9B5A-C876958E5305}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9EB0450F-FEAD-45EC-9B5A-C876958E5305}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EB0450F-FEAD-45EC-9B5A-C876958E5305}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EB0450F-FEAD-45EC-9B5A-C876958E5305}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EB0450F-FEAD-45EC-9B5A-C876958E5305}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1A3D72AF-F4F6-4851-B102-BB44894E115D}
+	EndGlobalSection
+EndGlobal
